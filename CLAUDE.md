@@ -10,11 +10,19 @@ YOLOv8 fine-tuned on the RDD2022 dataset (road damage: cracks, potholes),
 with EigenCAM explainability and ONNX export for deployment.
 
 ## CONSTRAINTS (non-negotiable)
-- Single local Windows laptop only. No cloud GPUs, no Colab, no AWS/GCP/Azure.
-- GPU: NVIDIA RTX 3050 laptop, 4GB VRAM. This caps model scale (nano/small
-  YOLOv8 variants only, not medium/large) and batch size.
+- Development, EDA, and docs: local Windows laptop.
+- Training runs: Google Colab free tier (T4, 16GB VRAM). Updated after
+  repeated OOM/RAM/OpenMP crashes on the local 4GB VRAM / 8GB RAM laptop
+  proved it insufficient for mosaic+mixup at any reasonable batch size —
+  see the crash history documented in `configs/train_config.yaml`'s
+  comments for the full trail (fl_gamma removal, workers=8 RAM exhaustion,
+  MixUp CPU-RAM crash). Still $0 budget — Colab free tier, not Colab Pro.
+- Local GPU: NVIDIA RTX 3050 laptop, 4GB VRAM — still caps model scale
+  (nano/small YOLOv8 variants only, not medium/large) for any local
+  dev/inference testing, no longer the constraint on training batch size.
 - $0 budget. 100% open-source tools only.
-- Terminal: Anaconda Prompt (conda + claude both work here).
+- Terminal: Anaconda Prompt (conda + claude both work here) for local work;
+  Colab notebook for training runs.
 
 ## HOW WE WORK
 - I am learning, not just shipping. For every non-trivial technical decision

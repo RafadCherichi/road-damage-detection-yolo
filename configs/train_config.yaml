@@ -27,28 +27,17 @@ data: configs/data.yaml
 # with the Albumentations weather pipeline in src/augmentation.py) ---
 mosaic: 1.0        # Ultralytics default — keep on, diversity benefit still
                    # wanted per docs/learning/06-mosaic-mixup.md
-mixup: 0.0         # TEMPORARILY DISABLED (was 0.15). The yolov8n_baseline-3
-                   # run crashed partway through epoch 2 with a numpy
-                   # ArrayMemoryError (CPU RAM, not VRAM) specifically during
-                   # MixUp. Root cause: YOLOv8 chains Mosaic -> MixUp, so a
-                   # MixUp event needs TWO full mosaic-composited images
-                   # (each built from up to 4 source images) in memory at
-                   # once — a sharp spike, on top of an already-tight 8GB RAM
-                   # laptop. Mosaic alone ran a full clean epoch 1; MixUp is
-                   # the newly-implicated operation. Epoch 2 (not epoch 1)
-                   # is suspected because Ultralytics validates every epoch
-                   # by default, and that validation pass's own memory
-                   # footprint likely stacked on training's, leaving epoch 2
-                   # less headroom at its first MixUp event — not fully
-                   # provable without profiling, not worth the time here.
-                   # NOTE: mixup is NOT on Ultralytics' resume-time
-                   # arg-override allowlist (checked ultralytics/engine/
-                   # trainer.py's check_resume() directly) — only imgsz,
-                   # batch, device, close_mosaic, augmentations, save_period,
-                   # workers, cache, patience, time, freeze, val, plots,
-                   # distill_model can be overridden via resume=<path>. This
-                   # value only takes effect on a FRESH run, not a resumed
-                   # one. Revisit re-enabling once batch=4 has proven stable.
+mixup: 0.15        # RE-ENABLED, back to the original Decision 2.2 value.
+                   # Was paused (0.0) after yolov8n_baseline-3 crashed
+                   # partway through epoch 2 with a numpy ArrayMemoryError
+                   # (CPU RAM, not VRAM) specifically during MixUp — YOLOv8
+                   # chains Mosaic -> MixUp, so a MixUp event needs TWO full
+                   # mosaic-composited images in memory at once, which was
+                   # too sharp a spike for the local 8GB-RAM Windows laptop.
+                   # That constraint doesn't apply on the current Colab T4
+                   # session (far more system RAM), so "Both composed"
+                   # (mosaic + mixup + Albumentations weather) is back in
+                   # effect as originally decided.
 close_mosaic: 10   # disable mosaic for the final 10 epochs so the model
                    # calibrates on true-scale objects before finishing
 scale: 0.3         # reduced from Ultralytics' default 0.5. Our EDA bbox
@@ -65,27 +54,29 @@ epochs: 100        # provisional Ultralytics default — revisit at Phase 3/4 de
 optimizer: auto    # provisional Ultralytics default — revisit at Phase 3/4 decision gate
 device: 0          # provisional Ultralytics default (first CUDA GPU) — revisit at Phase 3/4 decision gate
 
-# --- First-run safety (pinned ahead of the actual Phase 3/4 gate, since
-# this is the first real training run in this project — no empirical VRAM
-# data yet on this exact model+augmentation combo on a 4GB card) ---
-batch: 4           # lowered from 8 after the epoch-2 MixUp OOM crash above.
-                   # A mere 9.38 MiB allocation failed, suggesting system RAM
-                   # was nearly exhausted overall, not one giant spike — a
-                   # smaller batch means fewer mosaic composites held in
-                   # memory at once during batch construction, even with
-                   # mixup now off. Revisit -> 8, then -> -1 (AutoBatch) only
-                   # after this config has trained cleanly through several
-                   # epochs including their validation passes.
+# --- Compute environment: Google Colab T4, 16GB VRAM (see CLAUDE.md
+# CONSTRAINTS — training moved off the local 4GB VRAM / 8GB RAM laptop
+# after the crash history below). Local-laptop values are kept in these
+# comments as history, not deleted, since they explain *why* the project
+# started this conservative and are still relevant if training ever moves
+# back to a local/low-memory machine. ---
+batch: 32          # was 4 (pinned conservatively on the local 4GB laptop,
+                   # after an epoch-2 MixUp OOM crash at batch=8). 32 is a
+                   # well-established safe value for yolov8n@640 on a 16GB
+                   # T4 — comfortable headroom even with mosaic+mixup both
+                   # active. Revisit -> -1 (AutoBatch) once this config has
+                   # trained cleanly; AutoBatch's 60%-of-VRAM target is a
+                   # very large, safe margin on 16GB, unlike on the 4GB card.
 patience: 20       # default (100) equals epochs, making early stopping a no-op.
                    # 20 gives a real early-stopping safeguard: training stops if
                    # validation fitness hasn't improved in 20 epochs, saving GPU
                    # time and guarding against overfitting on this first run.
-workers: 0         # default is 8. Crashed on this run: WinError 1455 ("paging
-                   # file too small") while spawning DataLoader workers. Real
-                   # cause: Windows multiprocessing uses spawn, not fork, so
-                   # each worker process re-imports torch from scratch and
-                   # re-initializes CUDA (loading cufft64_11.dll etc.) — with
-                   # only 8GB total system RAM, 8 simultaneous CUDA inits
-                   # exhausted available memory. workers=0 runs data loading
-                   # single-process, avoiding spawn entirely. Revisit upward
-                   # (e.g. 2) only if data loading becomes a proven bottleneck.
+workers: 2         # was 0 (WinError 1455 workaround on the local Windows
+                   # laptop: Windows multiprocessing uses spawn, so each
+                   # worker process re-imports torch/CUDA from scratch,
+                   # which exhausted the laptop's 8GB RAM). Colab's runtime
+                   # is Linux, which uses fork — no whole-script re-import
+                   # per worker — so that specific failure mode doesn't
+                   # apply here. 2 gives a modest data-loading speedup with
+                   # low risk; revisit upward only if loading proves to be
+                   # a bottleneck relative to GPU compute time.
