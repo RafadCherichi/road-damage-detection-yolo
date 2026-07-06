@@ -1,0 +1,24 @@
+# Architecture / backbone spec. Training hyperparameters (loss, augmentation,
+# epochs, optimizer) live in train_config.yaml, not here.
+#
+# nc/names are defined once in configs/data.yaml — not duplicated here.
+
+architecture: yolov8   # fixed by CLAUDE.md's WHAT — not a re-litigated decision
+
+scale: n                # nano — primary model for this project
+weights: yolov8n.pt     # pretrained on COCO (blueprint 3.3, transfer learning);
+                        # low-controversy default for a dataset this size
+imgsz: 640              # YOLO standard input resolution, no reason to deviate yet
+
+# Why nano: RTX 3050 laptop, 4GB VRAM. Nano gives the safest VRAM/speed
+# margin, especially stacked with mosaic augmentation (which itself needs
+# extra memory to build 4-image composites) and Focal Loss. See
+# docs/blueprint.md Phase 3.2 and docs/learning/00-project-overview.md.
+
+# Planned follow-up comparison (NOT implemented yet):
+#   scale: s
+#   weights: yolov8s.pt
+# Once yolov8n trains successfully and VRAM/training-time budget allows,
+# compare against yolov8s for a possible recall bump on the smaller/rarer
+# classes (D10) our EDA flagged — decide after seeing nano's real numbers,
+# not before.

@@ -1,0 +1,9 @@
+# See environment.yml for the full Conda environment (recommended).
+# This file mirrors the pip-installable dependencies for reference.
+ultralytics
+roboflow
+opencv-python
+numpy
+matplotlib
+pyyaml
+albumentations

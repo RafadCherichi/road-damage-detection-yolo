@@ -1,0 +1,91 @@
+# Training hyperparameters for Ultralytics YOLOv8. Model/backbone spec lives
+# in model_config.yaml, not here.
+#
+# Scope note: only the Focal Loss + augmentation values below were an actual
+# decision made this session (Phase 2, docs/blueprint.md 2.1/2.2). Everything
+# marked "provisional" is left at Ultralytics' own default/auto behavior on
+# purpose — those are Phase 3/4 decisions (docs/blueprint.md) that haven't
+# been presented/chosen yet, so this file doesn't silently lock them in.
+
+data: configs/data.yaml
+
+# --- Loss (Phase 2 Decision 2.1 — Class Imbalance) ---
+# CORRECTION (this run's crash): fl_gamma is NOT a valid train() argument in
+# the installed ultralytics==8.4.84 — verified directly in
+# ultralytics/utils/loss.py: v8DetectionLoss now uses plain
+# nn.BCEWithLogitsLoss for classification, no fl_gamma/FocalLoss wiring at
+# all. Full writeup in docs/learning/07-focal-loss.md's correction section.
+#
+# DECISION: baseline run uses plain BCE as-is, no explicit class rebalancing
+# (no key needed here for that — this is just Ultralytics' default
+# behavior). Our imbalance is moderate (~2:1 D20:D10), not severe. If
+# validation later shows D10 underperforming, the next thing to try is a
+# `model.class_weights` training callback (real per-class weighting,
+# genuine custom code) — not fl_gamma, which is gone, not renamed.
+
+# --- Augmentation (Phase 2 Decision 2.2 — YOLO built-in, "Both" composed
+# with the Albumentations weather pipeline in src/augmentation.py) ---
+mosaic: 1.0        # Ultralytics default — keep on, diversity benefit still
+                   # wanted per docs/learning/06-mosaic-mixup.md
+mixup: 0.0         # TEMPORARILY DISABLED (was 0.15). The yolov8n_baseline-3
+                   # run crashed partway through epoch 2 with a numpy
+                   # ArrayMemoryError (CPU RAM, not VRAM) specifically during
+                   # MixUp. Root cause: YOLOv8 chains Mosaic -> MixUp, so a
+                   # MixUp event needs TWO full mosaic-composited images
+                   # (each built from up to 4 source images) in memory at
+                   # once — a sharp spike, on top of an already-tight 8GB RAM
+                   # laptop. Mosaic alone ran a full clean epoch 1; MixUp is
+                   # the newly-implicated operation. Epoch 2 (not epoch 1)
+                   # is suspected because Ultralytics validates every epoch
+                   # by default, and that validation pass's own memory
+                   # footprint likely stacked on training's, leaving epoch 2
+                   # less headroom at its first MixUp event — not fully
+                   # provable without profiling, not worth the time here.
+                   # NOTE: mixup is NOT on Ultralytics' resume-time
+                   # arg-override allowlist (checked ultralytics/engine/
+                   # trainer.py's check_resume() directly) — only imgsz,
+                   # batch, device, close_mosaic, augmentations, save_period,
+                   # workers, cache, patience, time, freeze, val, plots,
+                   # distill_model can be overridden via resume=<path>. This
+                   # value only takes effect on a FRESH run, not a resumed
+                   # one. Revisit re-enabling once batch=4 has proven stable.
+close_mosaic: 10   # disable mosaic for the final 10 epochs so the model
+                   # calibrates on true-scale objects before finishing
+scale: 0.3         # reduced from Ultralytics' default 0.5. Our EDA bbox
+                   # heatmap already showed small boxes, and mosaic
+                   # independently halves normalized box size again (see the
+                   # real India_000027 worked example in 06-mosaic-mixup.md)
+                   # — a smaller scale-jitter range avoids compounding
+                   # shrinkage into invisibility
+
+# --- Provisional (Phase 3/4 — not decided today, using Ultralytics' own
+# safe defaults so this file stays valid/runnable; revisit at the Phase 3/4
+# decision gate) ---
+epochs: 100        # provisional Ultralytics default — revisit at Phase 3/4 decision gate
+optimizer: auto    # provisional Ultralytics default — revisit at Phase 3/4 decision gate
+device: 0          # provisional Ultralytics default (first CUDA GPU) — revisit at Phase 3/4 decision gate
+
+# --- First-run safety (pinned ahead of the actual Phase 3/4 gate, since
+# this is the first real training run in this project — no empirical VRAM
+# data yet on this exact model+augmentation combo on a 4GB card) ---
+batch: 4           # lowered from 8 after the epoch-2 MixUp OOM crash above.
+                   # A mere 9.38 MiB allocation failed, suggesting system RAM
+                   # was nearly exhausted overall, not one giant spike — a
+                   # smaller batch means fewer mosaic composites held in
+                   # memory at once during batch construction, even with
+                   # mixup now off. Revisit -> 8, then -> -1 (AutoBatch) only
+                   # after this config has trained cleanly through several
+                   # epochs including their validation passes.
+patience: 20       # default (100) equals epochs, making early stopping a no-op.
+                   # 20 gives a real early-stopping safeguard: training stops if
+                   # validation fitness hasn't improved in 20 epochs, saving GPU
+                   # time and guarding against overfitting on this first run.
+workers: 0         # default is 8. Crashed on this run: WinError 1455 ("paging
+                   # file too small") while spawning DataLoader workers. Real
+                   # cause: Windows multiprocessing uses spawn, not fork, so
+                   # each worker process re-imports torch from scratch and
+                   # re-initializes CUDA (loading cufft64_11.dll etc.) — with
+                   # only 8GB total system RAM, 8 simultaneous CUDA inits
+                   # exhausted available memory. workers=0 runs data loading
+                   # single-process, avoiding spawn entirely. Revisit upward
+                   # (e.g. 2) only if data loading becomes a proven bottleneck.

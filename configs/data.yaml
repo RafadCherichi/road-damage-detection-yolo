@@ -1,0 +1,22 @@
+# RDD2022 India+Japan subset, YOLO format
+#
+# CLASS ORDER CAVEAT: this Kaggle upload (sujityp/rdd2022) ships with no
+# data.yaml/classes.txt/README of its own, so 0/1/2/3 -> D00/D10/D20/D40
+# is convention-based, not first-party-confirmed. Basis: the RDD2022
+# paper and sekilab's official repo both list classes in this order
+# (D00 < D10 < D20 < D40), and an independent RDD2022->YOLO conversion
+# repo (sivakanth1/Detecting_Road_Damage) ships a data.yaml with this
+# exact names: [D00, D10, D20, D40] order. Kaggle's page itself was not
+# fetchable (JS-rendered) to verify directly. See
+# docs/learning/00-project-overview.md for the full writeup.
+path: ../data/raw
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 4
+names:
+  0: D00  # longitudinal crack
+  1: D10  # transverse crack
+  2: D20  # alligator crack
+  3: D40  # pothole

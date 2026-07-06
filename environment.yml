@@ -1,0 +1,22 @@
+name: rdd-yolo
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11
+  - numpy<2
+  - matplotlib
+  - pyyaml
+  - pandas
+  - seaborn
+  - jupyterlab
+  - ipykernel
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu121
+      - C:/Users/91994/miniconda3/pkgs/cache/torch-2.2.0+cu121-cp311-cp311-win_amd64.whl
+      - torchvision==0.17.0
+      - ultralytics
+      - roboflow
+      - opencv-python
+      - albumentations

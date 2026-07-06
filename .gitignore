@@ -1,0 +1,23 @@
+# data
+data/raw/*
+data/processed/*
+data/splits/*
+!data/**/.gitkeep
+
+# model weights / results
+*.pt
+*.onnx
+results/metrics/*
+results/visualizations/*
+results/eigencam_outputs/*
+results/inference_samples/*
+results/training_runs/*
+!results/**/.gitkeep
+
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# env
+.env
