@@ -62,7 +62,7 @@ for each accepted YOLO detection:
 
 **Result:** heatmaps that correctly isolate road damage and ignore sky/background.
 
-![Custom Grad-CAM Verification](assets\gradcam_comparison.jpg.jpg)
+![Custom Grad-CAM Verification](assets/gradcam_comparison.jpg.jpg)
 
 ---
 
