@@ -21,3 +21,6 @@ __pycache__/
 
 # env
 .env
+# Ignore massive data and result folders
+data/
+results/
