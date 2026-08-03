@@ -1,9 +1,17 @@
 # See environment.yml for the full Conda environment (recommended).
 # This file mirrors the pip-installable dependencies for reference.
+#
+# torch is intentionally not pinned here as a plain requirement: the
+# correct wheel depends on your OS/CUDA version. Install it first, e.g.:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# (or the CPU-only build from https://pytorch.org/get-started/locally/).
+# This project's own conda env pins an exact local wheel — see environment.yml.
 ultralytics
-roboflow
 opencv-python
 numpy
 matplotlib
 pyyaml
 albumentations
+onnx
+onnxruntime
+Pillow

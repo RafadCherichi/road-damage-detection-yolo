@@ -62,7 +62,7 @@ for each accepted YOLO detection:
 
 **Result:** heatmaps that correctly isolate road damage and ignore sky/background.
 
-![Custom Grad-CAM Verification](assets\gradcam_comparison.jpg.jpg)
+![Custom Grad-CAM Verification](assets/gradcam_comparison.jpg.jpg)
 
 ---
 
@@ -122,7 +122,7 @@ road-damage-detection-yolo/
 git clone https://github.com/RafadCherichi/road-damage-detection-yolo.git
 cd road-damage-detection-yolo
 pip install -r requirements.txt
-python src/inference.py --weights results/weights/best.onnx --source data/raw/valid/images
+python src/inference.py --weights results/training_runs/yolov8n_kaggle_run/weights/best.onnx --source data/raw/valid/images
 ```
 
 ---
