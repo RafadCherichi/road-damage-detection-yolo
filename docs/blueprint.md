@@ -14,7 +14,15 @@ Decisions to present when we reach this phase:
 ## Phase 2 — Preprocessing & Augmentation
 Decisions:
 - 2.1 Class Imbalance: Oversample vs Focal Loss vs Weighted Sampler vs
-  Combination (Focal Loss recommended — YOLO supports natively)
+  Combination (Focal Loss recommended — YOLO supports natively).
+  **SUPERSEDED, see `docs/learning/07-focal-loss.md`'s correction
+  section:** the installed Ultralytics version (8.4.x) doesn't wire Focal
+  Loss into the standard training path at all (`fl_gamma` isn't a valid
+  argument; `v8DetectionLoss` uses plain `nn.BCEWithLogitsLoss`) — this
+  was discovered only when training crashed on it. Actual final decision:
+  plain BCE, accepted as a defensible tradeoff given the moderate (~2:1)
+  imbalance. Not a case of the recommendation being wrong at the time it
+  was written — the underlying library changed the option away.
 - 2.2 Augmentation: YOLO built-in vs Albumentations vs Both composed
   (Both recommended — mosaic/mixup for distribution shift, Albumentations
   for weather realism)
@@ -28,17 +36,36 @@ Decisions:
 - 3.3 Transfer Learning: COCO pretrained vs ImageNet-only vs scratch
   (COCO recommended)
 - 4.1 Experiment Tracking: TensorBoard vs WandB vs MLflow
-  (TensorBoard recommended — zero setup, local)
+  (TensorBoard recommended — zero setup, local).
+  **NEVER FINALIZED** — no experiment tracker was actually wired up;
+  `src/train.py` relies solely on Ultralytics' own automatic
+  `results.csv`/plots per run. Flagged here rather than silently assumed
+  done.
 - 4.2 Optimizer: SGD+cosine vs AdamW+OneCycleLR vs auto
-  (SGD+cosine recommended — YOLO default, battle-tested)
+  (SGD+cosine recommended — YOLO default, battle-tested).
+  **NEVER FINALIZED** — `configs/train_config.yaml` ships with
+  `optimizer: auto` (Ultralytics' own default), explicitly marked
+  "provisional Ultralytics default — revisit at Phase 3/4 decision gate"
+  in that file's comments. The gate was never actually reached.
 - 4.3 Small Object Strategy: train as-is vs SAHI at inference vs multi-scale
   training vs custom head (SAHI recommended — road cracks are tiny, zero
-  training cost)
+  training cost).
+  **NOT IMPLEMENTED** — see `docs/learning/08-sahi.md`, which documents
+  the concept and the real latency/throughput tradeoff against this
+  project's "real-time" framing, but SAHI itself was never built. Current
+  actual strategy is "train as-is."
 
 ## Phase 5 — Evaluation & Explainability
 Decisions:
 - 5.1 Explainability: Grad-CAM vs EigenCAM vs SHAP vs Attention Rollout
-  (EigenCAM recommended — more stable than Grad-CAM for detection models)
+  (EigenCAM recommended — more stable than Grad-CAM for detection models).
+  **SUPERSEDED, see `docs/learning/09-eigencam.md`:** EigenCAM was
+  actually tried first (per this recommendation) and failed observably on
+  real road-scene images — sky/glare regions dominated its PCA-based
+  saliency, consistently highlighting the wrong region (real evidence:
+  `results/eigencam_outputs/*.jpg`). Actual final decision: a custom
+  per-detection Grad-CAM (`src/explainability.py`), built specifically in
+  response to this documented failure, not a preference swap.
 - 5.2 Deployment Format: PyTorch .pt vs ONNX vs TensorRT vs OpenVINO
   (ONNX recommended — cross-platform, industry standard)
 

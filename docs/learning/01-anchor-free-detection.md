@@ -154,6 +154,23 @@ a related but distinct architectural choice from being anchor-free —
 worth knowing the two are independent ideas that happen to appear
 together in YOLOv8.
 
+## Concept Card
+- **(a) In general:** anchor-free detection predicts each box as raw
+  distances from a point to its four edges; anchor-based detection
+  predicts offsets from a pre-clustered set of stencil shapes.
+- **(b) Used here:** not a separate toggle — it's inherent to choosing
+  YOLOv8 at all. `configs/model_config.yaml`'s `architecture: yolov8`
+  line is the actual decision point; every `YOLO()` instantiation in
+  `src/train.py`, `evaluate.py`, `inference.py`, and `explainability.py`
+  inherits the anchor-free head automatically from that one choice.
+- **(c) When anchor-based would win:** if this project's box-shape
+  distribution were tight and well-understood in advance (e.g. a
+  single, consistent object class/aspect ratio), a well-fit anchor set
+  can converge faster since the model starts closer to the right answer.
+  Our 4-class, visually varied dataset (per the EDA bbox-size heatmap) is
+  exactly the opposite case — anchor-free avoids needing to get that
+  clustering right at all.
+
 ## Interview questions
 
 **Q: Why did YOLO move from anchor-based (v3–v5) to anchor-free (v8)?**

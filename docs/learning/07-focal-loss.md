@@ -192,6 +192,27 @@ validation results later show D10 specifically underperforming, the
 `class_weights` callback above is the concrete next thing to try — not
 `fl_gamma`, which is not just renamed but genuinely gone.
 
+## Concept Card
+- **(a) In general:** Focal Loss down-weights easy, already-correct
+  examples so training gradient concentrates on hard/rare cases —
+  intended to fix class imbalance and easy-negative flooding in one
+  mechanism.
+- **(b) Used here:** **not implemented, by necessity, not choice** — no
+  code reference exists because `fl_gamma` doesn't exist as a valid
+  argument in the installed `ultralytics==8.4.84` (verified directly in
+  `ultralytics/utils/loss.py`: `v8DetectionLoss` uses plain
+  `nn.BCEWithLogitsLoss`). `configs/train_config.yaml`'s comment block
+  documents this correction in place of a config value. This project
+  currently runs plain BCE.
+- **(c) When plain BCE (the actual current state) would be the wrong
+  call:** if the class imbalance were more severe than this project's
+  real ~2:1 ratio (D20:D10, 5,617:2,814 train annotations) — at, say,
+  10:1 or worse, plain BCE's lack of any rebalancing would likely show up
+  as materially worse recall on the rare class, and the `class_weights`
+  training-callback workaround (real custom code, described above) would
+  become worth the engineering cost it wasn't worth at this project's
+  actual, moderate imbalance level.
+
 ## Interview questions
 
 **Q: Why choose Focal Loss over oversampling or class-weighted sampling for

@@ -183,6 +183,22 @@ boost for the minority class. Mosaic (data composition) and Focal Loss
 two different angles, which is why both were chosen together rather than
 treating them as redundant.
 
+## Concept Card
+- **(a) In general:** Mosaic composites 4 images into 1 (spatial
+  diversity); MixUp pixel-blends 2 images into 1 (visual-noise
+  robustness). Both are training-time-only augmentations.
+- **(b) Used here:** `configs/train_config.yaml`'s `mosaic: 1.0`,
+  `mixup: 0.15`, `close_mosaic: 10`, and `scale: 0.3` keys, read directly
+  by `src/train.py`'s `model.train(**train_args)` call.
+- **(c) When disabling MixUp is the right call instead:** exactly what
+  happened in this project, temporarily — on the local 8GB-RAM laptop,
+  MixUp's requirement to hold two full mosaic-composited images in memory
+  simultaneously caused a real `ArrayMemoryError` crash (see the
+  correction note above and `README.md`'s Lessons Learned). It was set to
+  `mixup: 0.0` for that constrained environment and only re-enabled once
+  training moved to a machine (Colab/Kaggle) with more system RAM
+  headroom — a direct, measured hardware constraint, not a preference.
+
 ## Interview questions
 
 **Q: Mosaic literally shrinks each object in the composite image — how can

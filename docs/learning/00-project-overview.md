@@ -51,6 +51,80 @@ RDD2022 dataset (Kaggle, sujityp/rdd2022 upload — already in YOLO format)
 | Dataset | RDD2022, India+Japan subset only | RDD2022 is a public dataset of road photos from 6 countries, each photo hand-annotated with damage locations. | More visual variety than a single country, without needing the compute budget of all 6 countries (~47K images) on a 4GB laptop GPU — think of VRAM like the cargo space in a moving truck: more variety of "furniture" (images) needs more space, and 4GB is a small truck. |
 | Annotation format | YOLO TXT (already in this upload) | Each image has a matching `.txt` file — one line per damage box, formatted as `class_id x_center y_center width height`, all as fractions of the image size (so it works regardless of the image's actual pixel dimensions). The older, more verbose alternative is **Pascal VOC XML** (one full XML file per image, coordinates in raw pixels). | No conversion work needed — this specific Kaggle upload already ships pre-converted to YOLO TXT, unlike the original RDD2022 release. |
 
+## Concept Cards: Key Tech Choices
+Each card: (a) the concept in general, (b) exactly where it's used in
+this codebase, (c) when the alternative would actually have been the
+better call. These expand the Tech Stack table above with concrete code
+references and explicit alternatives, rather than repeating it.
+
+**Environment isolation — Conda vs. venv vs. Docker**
+- (a) A tool that keeps one project's Python interpreter and package
+  versions separate from every other project's, so upgrading a package
+  for Project B can't silently break Project A.
+- (b) Used here as the `rdd-yolo` conda environment (`environment.yml`),
+  activated via `conda activate rdd-yolo` before every command in
+  `CLAUDE.md`'s COMMANDS section.
+- (c) `venv` would have been the better choice for a pure-Python-only
+  project with no compiled/GPU dependencies — it's lighter-weight than
+  conda. Docker would have been the better choice if this needed to run
+  identically across multiple machines/collaborators or ship as a
+  reproducible deployed artifact — neither applied here (single
+  developer, single machine, per `docs/blueprint.md` decision 1.1).
+
+**Package install method — pip wheel vs. conda channel**
+- (a) Two different ways to get a compiled package (here, PyTorch with
+  CUDA support) installed: conda resolves and downloads from its own
+  package channel, or `pip` installs a pre-built wheel file directly.
+- (b) Used here in `environment.yml`'s `pip:` section, installing a
+  manually-downloaded local wheel file
+  (`torch-2.2.0+cu121-cp311-cp311-win_amd64.whl`) instead of conda's
+  `pytorch` channel.
+- (c) The conda channel would have been the better (simpler, single-line)
+  choice under normal circumstances — it was only abandoned here because
+  it repeatedly failed mid-download (`IncompleteRead` on the 1.2GB
+  package, 3 attempts) over an unstable connection; a single wheel file
+  sidestepped that specific multi-part-download failure.
+
+**Detector architecture — YOLOv8 vs. other object detectors**
+- (a) See `docs/learning/01-anchor-free-detection.md` for the full
+  anchor-free-vs-anchor-based comparison this decision actually turns on.
+- (b) Used here as `configs/model_config.yaml`'s `architecture: yolov8`
+  and `weights: yolov8n.pt` — the Ultralytics `YOLO()` class loaded in
+  every one of `src/train.py`, `evaluate.py`, `export.py`, `inference.py`,
+  and `explainability.py`.
+- (c) YOLOv9/v10 or RT-DETR would have been reasonable alternatives with
+  more development time to evaluate a less mature ecosystem; Faster R-CNN
+  would have been the better choice only if real-time inference speed
+  weren't a requirement at all (per `docs/blueprint.md` decision 3.1,
+  KEYSTONE).
+
+**Dataset scope — India+Japan subset vs. all 6 countries vs. single country**
+- (a) RDD2022 spans 6 countries' worth of road photos (~47K images
+  total); a project can train on all of them, just one, or a subset.
+- (b) Used here as the actual files copied into `data/raw/` (only
+  India- and Japan-prefixed filenames), referenced by
+  `configs/data.yaml`'s `path`/`train`/`val`/`test` keys.
+- (c) All 6 countries would have been the better choice with more VRAM
+  headroom than a 4GB local card allows, for maximum visual diversity. A
+  single country would have been the better choice if minimizing
+  training time were the only goal, at the cost of the geographic
+  diversity that helps generalization (`docs/blueprint.md` decision 1.2).
+
+**Annotation format — YOLO TXT vs. Pascal VOC XML**
+- (a) Two ways to store "where is the damage in this image": YOLO TXT is
+  one compact line per box (`class_id x_center y_center width height`,
+  normalized 0-1); Pascal VOC XML is one verbose XML file per image with
+  raw pixel coordinates.
+- (b) Used here as the `.txt` files under `data/raw/{train,valid,test}/labels/`
+  — this specific Kaggle upload already ships in this format, read
+  directly by Ultralytics' own data loader (no custom parsing code in
+  this project).
+- (c) Pascal VOC XML would only have mattered if the raw RDD2022 release
+  (which does ship VOC XML) had been used instead of this pre-converted
+  Kaggle upload — in that case, a conversion step (Roboflow, per
+  `docs/blueprint.md` decision 1.3) would have been required before any
+  YOLO training could start at all.
+
 ## Why India+Japan specifically (not all 6 countries, not just one)
 Per `docs/blueprint.md` decision 1.2: enough geographic and visual
 diversity (different road surfaces, camera angles, damage styles) to make

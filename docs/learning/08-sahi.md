@@ -113,6 +113,27 @@ first, which is why this stayed a documented future-work item
 (`README.md`'s Future Work) rather than something implemented without
 that discussion happening.
 
+## Concept Card
+- **(a) In general:** slice a large image into overlapping tiles, run
+  the detector on each tile at full resolution, then remap and merge
+  detections back into the original image's coordinates — an
+  inference-time technique for recovering small-object detail lost to
+  downscaling.
+- **(b) Used here:** **not implemented** — no file in `src/` performs
+  tiled inference; every prediction call runs on the whole image resized
+  to `imgsz: 640` (`configs/model_config.yaml`). There is no code
+  reference to point to, by design (see status note at the top of this
+  file).
+- **(c) When "train as-is" (the actual current approach) is the wrong
+  call instead:** if this project's real per-class results
+  (`docs/pm-perspective.md`) showed small/thin classes like D10
+  systematically failing on genuinely tiny objects in high-resolution
+  source photos — rather than the moderate, broad-based weakness actually
+  observed across precision, mAP, and localization — SAHI's latency cost
+  would be easier to justify. As measured, the weakness isn't clearly a
+  small-object-scale problem specifically, so training as-is remains the
+  defensible default until that's tested directly.
+
 ## Interview questions
 
 **Q: How does SAHI improve small-object recall without retraining the

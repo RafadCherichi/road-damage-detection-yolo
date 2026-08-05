@@ -154,6 +154,28 @@ many road-damage boxes are small, so a predicted box that's merely
 "close" rather than "overlapping" is a very common case this project's
 model will actually encounter, especially early in training.
 
+## Concept Card
+- **(a) In general:** IoU measures box overlap directly; GIoU/DIoU/CIoU
+  each add a correction term so the loss stays informative even when
+  boxes don't overlap at all (see the math section above for why plain
+  IoU's zero-gradient dead zone is a real problem).
+- **(b) Used here:** not a config toggle — CIoU is Ultralytics'
+  hard-coded box-regression loss inside `BboxLoss`
+  (`ultralytics/utils/loss.py`, outside this project's own code), applied
+  automatically to every YOLOv8 training run, including
+  `src/train.py`'s. This project's `configs/train_config.yaml` doesn't
+  set a `box` loss-type key at all — there isn't one to set; the type is
+  fixed by the architecture choice, only the loss *weight* (`box` gain,
+  left at Ultralytics' default) would be tunable.
+- **(c) When plain IoU or GIoU would have been enough:** if this
+  project's predicted boxes started out already close to their targets
+  (e.g. fine-tuning on a near-identical follow-up dataset), the zero-
+  gradient dead zone plain IoU has would rarely be hit in practice, and
+  the simpler metric's cost/benefit would look better. Early in training
+  from COCO weights on a new class set (`docs/learning/04-transfer-learning.md`),
+  predictions start far from correct, which is exactly when CIoU's
+  extra correction terms matter most.
+
 ## Interview questions
 
 **Q: Why isn't plain IoU good enough as a loss function?**

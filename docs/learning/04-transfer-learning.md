@@ -147,6 +147,24 @@ transfer learning is the third leg of the same underlying constraint this
 whole project is built around: get a good detector out of a comparatively
 small, moderately imbalanced dataset on a single 4GB laptop GPU.
 
+## Concept Card
+- **(a) In general:** start training from weights already learned on a
+  large, related task instead of random initialization, so the network
+  only has to learn what's new about your specific problem.
+- **(b) Used here:** `configs/model_config.yaml`'s `weights: yolov8n.pt`
+  line — loaded via `YOLO(model_cfg["weights"])` in `src/train.py` — sets
+  the actual starting point to Ultralytics' COCO-pretrained checkpoint.
+  Full fine-tuning is used (no frozen layers): Ultralytics' default
+  `freeze=None` was never overridden anywhere in
+  `configs/train_config.yaml`.
+- **(c) When freezing the backbone would win instead:** per this file's
+  own interview Q3, if this project's dataset were roughly 100x smaller
+  (~150 images instead of ~14,594), freezing most of the backbone and
+  fine-tuning mainly the detection head would be the safer call — full
+  fine-tuning on that little data risks overfitting and forgetting the
+  useful pretrained features. At this project's actual dataset size, full
+  fine-tuning is the better-supported choice.
+
 ## Interview questions
 
 **Q: Why COCO-pretrained instead of an ImageNet-pretrained backbone for an

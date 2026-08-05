@@ -129,6 +129,24 @@ project's Grad-CAM approach isn't an arbitrary architectural preference,
 it's a direct, evidence-backed response to a method that demonstrably
 didn't work for this specific domain.
 
+## Concept Card
+- **(a) In general:** EigenCAM visualizes CNN attention via PCA on
+  activations alone — no class label, no backward pass, fast and
+  architecture-agnostic, but blind to which class or detection is
+  actually being explained.
+- **(b) Used here:** **tried and rejected** — the 5 real images in
+  `results/eigencam_outputs/*.jpg` are its actual output on this
+  project's validation images, kept as documented evidence of the
+  failure, not as the chosen explainability method. The method that
+  replaced it, `src/explainability.py`'s `DetectionGradCAM` class, is
+  what's actually used in this project today.
+- **(c) When EigenCAM would have been the better choice instead:** on
+  imagery without a single dominant, class-irrelevant variance source —
+  e.g. controlled/studio photos, or a task where "what does this layer
+  generally attend to" (not tied to one specific class) is the actual
+  question being asked. Outdoor road photos, with sky/glare as a huge,
+  irrelevant variance source, are close to a worst case for this method.
+
 ## Interview questions
 
 **Q: Why is EigenCAM sometimes described as "class-agnostic," and is that

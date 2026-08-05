@@ -1,26 +1,71 @@
-# Real-Time Road Damage Detection (YOLOv8n + Custom Grad-CAM)
+# Road Damage Detection (YOLOv8n + Custom Grad-CAM)
 
 ![Demo Inference](assets/hero_detection.jpg.jpg)
 
-Real-time multi-class road defect detection (cracks, potholes) for autonomous
-vehicle perception. Fine-tuned YOLOv8n on a geographically filtered India+Japan
-subset of RDD2022, featuring a custom-built per-detection Grad-CAM pipeline that
-solves YOLOv8's non-differentiable NMS and multi-scale anchor problem — and
+Multi-class road defect detection (cracks, potholes), fine-tuned YOLOv8n on a
+geographically filtered India+Japan subset of RDD2022. Positioned as a
+municipal triage/inspection-prioritization aid (see
+[`docs/pm-perspective.md`](docs/pm-perspective.md) for the real-world scoping
+call) rather than a safety-certified autonomous-vehicle system — the measured
+0.662 overall recall (Results below) is nowhere near the reliability bar that
+would require. Features a custom-built per-detection Grad-CAM pipeline that
+solves YOLOv8's non-differentiable NMS and multi-scale anchor problem, and is
 exported to a static ONNX graph for edge deployment.
 
-**mAP@50: 0.718** | **D20 (Alligator Crack): 0.858 mAP@50** | **ONNX export: ~20ms/frame**
+**mAP@50: 0.718** | **D20 (Alligator Crack): 0.858 mAP@50** | **ONNX export: numerically verified, latency not yet benchmarked**
 
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white) ![Ultralytics](https://img.shields.io/badge/Ultralytics_YOLOv8-black?style=for-the-badge&logo=yolo&logoColor=white) ![ONNX](https://img.shields.io/badge/ONNX-005CED?style=for-the-badge&logo=onnx&logoColor=white) ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+
+---
+
+## How to Read This Project
+
+Recommended order, each doc building on the last:
+
+1. **This README** — the technical snapshot: what was built, the real
+   results, and the real constraints/failures hit along the way. Start
+   here for the 2-minute version.
+2. **[`docs/pm-perspective.md`](docs/pm-perspective.md)** — the same
+   results reframed in decision-making terms: who'd actually use this,
+   what business question it answers (and doesn't), and a per-class
+   ship-vs-review scoping call. Read this next if you care about "so
+   what" more than "how."
+3. **[`docs/blueprint.md`](docs/blueprint.md)** — the phased decision
+   log: every major technical choice, the alternatives considered against
+   it, and (flagged explicitly where relevant) which original
+   recommendations were later superseded by real findings during
+   implementation. Read this for the "why this and not that."
+4. **[`docs/learning/`](docs/learning/)** — concept-by-concept deep
+   dives (plain-language intuition, math with worked examples using this
+   project's real data, and a concept card tying each one to exactly
+   where it's used in this codebase, or why an alternative was chosen
+   instead). Read the ones relevant to whatever you're digging into.
+5. **Code walkthrough** — no standalone walkthrough doc exists yet for
+   this project; `src/` is organized one file per pipeline stage
+   (`train.py`, `evaluate.py`, `explainability.py`, `export.py`,
+   `inference.py`, `augmentation.py`), and each `docs/learning/` concept
+   card's code reference doubles as a pointer into that code today.
+6. **Eval report** — likewise no standalone `evaluation-report.md`; the
+   Results table below plus `results/metrics/metrics_summary.csv` (the
+   real `src/evaluate.py` output) and
+   [`docs/learning/05-map-metric.md`](docs/learning/05-map-metric.md)
+   (metric methodology) cover that role for now.
 
 ---
 
 ## The Engineering Problem
 
 Autonomous vehicles and ADAS systems need more than "is there damage?" —
-they need precise spatial localization to feed a path planner. This project
-fine-tunes a lightweight, anchor-free YOLOv8n detector to classify and
-localize four road damage types, optimized for a small memory footprint
-suitable for edge/embedded deployment.
+they'd need precise spatial localization to feed a path planner. This
+project fine-tunes a lightweight, anchor-free YOLOv8n detector to classify
+and localize four road damage types, optimized for a small memory footprint
+suitable for edge/embedded deployment — **but the measured results below
+(0.662 overall recall, meaning roughly 1 in 3 real damage instances goes
+undetected) fall well short of what a safety-critical, real-time
+path-planning input would require.** As actually measured, this is honestly
+positioned as a municipal triage/inspection-prioritization tool (see
+[`docs/pm-perspective.md`](docs/pm-perspective.md)), with driving-safety
+integration as aspirational future work, not a current capability.
 
 ### Results (100 epochs, YOLOv8n, India+Japan subset)
 
@@ -80,6 +125,10 @@ PASS — max absolute difference of 0.000061 across final detection outputs
 floating-point noise between PyTorch and ONNX Runtime kernels** (see
 `src/export.py`'s `verify_parity()` and
 `docs/learning/10-onnx-deployment.md` for the full worked check).
+**Inference latency has not been independently benchmarked in this
+project** — no per-frame timing measurement exists in `src/` or
+`results/`; treat any specific latency figure for this model as
+unverified until that benchmark is actually run.
 
 ---
 

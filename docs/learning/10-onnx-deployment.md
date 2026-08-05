@@ -123,6 +123,23 @@ silently blocked real deployment testing later. The project's "static
 ONNX, no PyTorch dependency" deployment story is only actually true now
 that this check has run and passed with real numbers to point to.
 
+## Concept Card
+- **(a) In general:** ONNX converts a trained model into a
+  framework-agnostic graph a different runtime can execute; a static
+  export fixes the input shape for more aggressive graph optimization at
+  the cost of shape flexibility; structural validity and numerical
+  parity are two genuinely different, independently-necessary checks.
+- **(b) Used here:** `src/export.py`'s `export_to_onnx()` (static shape,
+  `dynamic=False`, `imgsz=640`, `opset=12`) and `verify_parity()` (the
+  real numerical check, `device="cpu"`, `atol=1e-3`) — real result: PASS,
+  max abs difference 0.000061, on `yolov8n_kaggle_run/weights/best.onnx`.
+- **(c) When dynamic-shape export would have been the better choice:** if
+  this project's deployment target needed to serve variable batch sizes
+  or resolutions from one exported graph (e.g. a shared inference server
+  handling requests of different sizes) — this project's actual use case
+  (single-frame, fixed-resolution inference) never needs that flexibility,
+  which is why static shape was chosen with no real cost.
+
 ## Interview questions
 
 **Q: What's the difference between checking an ONNX export is "valid" and

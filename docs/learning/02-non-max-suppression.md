@@ -125,6 +125,26 @@ positives in our precision/recall numbers. Understanding the mechanism
 means a bad `iou` setting shows up as an explainable, fixable number, not
 a mysterious accuracy drop.
 
+## Concept Card
+- **(a) In general:** NMS removes near-duplicate detections of the same
+  object, keeping the highest-confidence box and suppressing others that
+  overlap it past an IoU threshold.
+- **(b) Used here:** not explicitly configured anywhere in this project —
+  every prediction call (`src/inference.py`'s `run_on_image`,
+  `src/evaluate.py`'s `model.val()`, `src/explainability.py`'s
+  `self.yolo.predict()`) relies on Ultralytics' internal default IoU
+  threshold (`iou=0.7`), applied automatically as part of any
+  `YOLO().predict()`/`.val()` call. **Flagging honestly:** if this
+  threshold is ever deliberately tuned for this project, it isn't yet —
+  there's no code reference to point to beyond "the untouched default."
+- **(c) When a different threshold would win:** a lower threshold (more
+  aggressive suppression) would help if our D20 (alligator crack) class,
+  which our EDA showed clustering densely, were producing many genuine
+  near-duplicate boxes around the same crack. A higher threshold (more
+  permissive) would help if nearby-but-distinct damage instances were
+  being incorrectly merged. Neither has been measured in this project —
+  the default was never revisited against real failure cases.
+
 ## Interview questions
 
 **Q: Why is a suppressed box's score irrelevant to whether it survives?**
